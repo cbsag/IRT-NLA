@@ -1,103 +1,155 @@
-import nltk
-# nltk.download("punkt")
 from nltk.corpus import reuters
 from nltk.tokenize import RegexpTokenizer
-from nltk.tokenize import word_tokenize,sent_tokenize
+import nltk
 import re
-from collections import defaultdict
-# import sklearn_crfsuite 
-# !pip install sklearn-crfsuite
-# from sklearn_crfsuite import CRF
-# nltk.download('averaged_perceptron_tagger')
-# nltk.download('maxent_ne_chunker')
-# nltk.download('words')
+input=reuters.raw("training/267")
+
+#TOKENIZATION
+#split heading
+split_heading=re.search(r"[A-Z|\s]+\n",input)
+heading=split_heading.group().lower()
+body=heading+input[heading.find("\n")+1:]
 
 
-# Tokenixation
-# mytokenizer=RegexpTokenizer(r'[A-Z]+\.[A-Z]+\.|\'s|[0-9]+\,[0-9]+|[0-9]+\.[0-9]+|\w+|\d+|\S') ======= like Embassy's
+print(body)
 
-mytokenizer=RegexpTokenizer(r'[A-Z]+\.[A-Z]+\. \w*|\'s|\$|[0-9]+\,[0-9]+|[0-9]+\.[0-9]+|\w+|\d+|\S+')
-sentence = reuters.raw("training/9940")
-# sentence="UNITED STATES TO IMPORT BRAZILIAN COFFEE\n The United States is set to import coffee from Brazil in 2022, despite challenges in the coffee market. According to a report by the Brazilian Coffee Association, the U.S. is expected to import over 500,000 bags of Brazilian coffee next year. This move comes as the price of coffee beans worldwide continues to rise, making it a strategic decision for the United States to secure a steady supply of coffee beans.Brazil's coffee production is forecasted to reach 3.5 million tonnes in 2022, marking a significant increase from the previous year. This surge in production is seen as a response to growing global demand for high-quality coffee. It is expected that the Brazilian government will implement measures to support coffee farmers and maintain the country's position as a major coffee exporter."
+tokenizer=RegexpTokenizer(r'\S[A-Z|\.]+ \w*|\'s|[A-Z|a-z]+\'[a-r|t-z]+|\$|[0-9]+\,[0-9]+\,*[0-9|\,]*|[0-9]+\.[0-9]+|\w+|\d+|\S+')
 
-headindSplit = re.search(r'[A-Z|\s]+\n',sentence)
-heading=headindSplit.group().lower()
-
-body=heading+sentence[heading.find("\n")+1:]+".I have one dog. Three handsome pooches. A group of three delightful dogs. Three appealing furry friends."
-sentence=body
-tokenization= mytokenizer.tokenize(sentence)
-print(tokenization)
+tokenized_input=tokenizer.tokenize(body)
+print(tokenized_input)
+split_sents=nltk.sent_tokenize(body)
+print(split_sents)
 
 
-# SENTENCE SPLITTING
-sentenceSplit = nltk.sent_tokenize(sentence)
-# print(sentenceSplit)
+#POS Tagging
+# from nltk.tag import StanfordPOSTagger
+# model='/Users/hari/Downloads/stanford-postagger-full-2020-11-17/models/english-bidirectional-distsim.tagger'
+# jar='/Users/hari/Downloads/stanford-postagger-full-2020-11-17/stanford-postagger.jar'
+# st = StanfordPOSTagger(model,jar,encoding="utf8")
 
-# POS Tagging
-posTag = nltk.pos_tag(tokenization)
-print(posTag,"\n","------------------------------------------------------------------------")
+tagged_input=nltk.pos_tag(tokenized_input,lang="eng")
+print(tagged_input)
+# st = StanfordPOSTagger(model,jar,encoding="utf8")
+# print(st.tag(tokenized_heading))
+
+#gazetter
+gazetteer={"COUNTRY":["indonesia","philippines","united states of america","australia","india","singapore","china","russia","germany","thailand","japan"],
+          "currency":["rupiah","$","dlr","dlrs"],
+          "units":["pct","mln","tonnes","billion","kg","m/s","kms","km/h"],
+          "Organization":["u.s. embassy","n.a.s.a"],
+          "date":["1987","1986"],
+          "product":["copra","rice","wheat",""],
+          "time":["am","pm","AM","PM","hrs","min","secs","sec","hours","minutes","seconds","hour","minute","second","hr","min"]
+          }
+
+# for Key in gazetter:
+#     for values in gazetter[key]:
+#         try:
+#             index=tokenized_input.index(values)
+#             if(index>=0):
+#                 tagged_input[index]=(values,key)
+#                 print(tagged_input[index])
+#         except:
+#             continue
 
 
-# gazetter
-gazetteer = {
-    "Country": ["Indonesia", "Philippines", "indonesia","phillipines"],
-    "Year": ["1987", "1986"],
-    "Currency" :["rupiah"],
-    "Organization": ["U.S. Embassy"],
-    "Unit": ["tonnes", "mln tonnes", "mln","pct"],
-    "Product": ["copra"],
-    "Concept": ["margin", "prices"],
-    "Action": ["forecast", "import", "devaluation", "duties", "price", "production"]
-}
-
-# Named Entity Recoginiton
-
-# print(nltk.ne_chunk(posTag,binary=False))
+          
+#Named Entity Recognition
 
 
-def custom_ner(posTag, gazetteer):
-    entities = []
-    for token, pos_tag in posTag:
-        for category, values in gazetteer.items():
-            if token.upper() in [value.upper() for value in values]:
-                entities.append((token, category))
+    # for word,categories in tagged_input:
+    #     for key,value in gazetter.items():
+    #         if word.lower() in value:
+    #             index=tagged_input.index((word,categories))
+    #             tagged_input[index]=(word,key)
 
-    # limitations of this module is that only matched value is stored like posTagged value in Gaz list
-    for word,categories in posTag:
-                for key, values in gazetteer.items():
-                      if word in values:
-                            index= posTag.index((word,categories))
-                            posTag[index]=(word,key)
-    return entities,posTag
+# def custom_NER(named_entity,gaz_list):
+#     entities=[]
+#     if isinstance(named_entity,nltk.Tree):
+#         val=named_entity.leaves()[0][0]
+#         if named_entity.label()=="NE" or val.lower() in gaz_list:
+#             entities.append(val)
+        
+#         else:
+#             for subtree in named_entity:
+#                 entities.extend(custom_NER(subtree,gaz_list))
+#     return entities
 
-# Perform custom NER
-recognized_entities= custom_ner(posTag, gazetteer)
-print("\n",recognized_entities,"----------")
 
-print("\n",nltk.ne_chunk(posTag,binary=True))
+def custom_NERI(named_entity,gaz_list):
+    entities=[]
+    if isinstance(named_entity,nltk.Tree):
+       
+        for subtree in named_entity:
+            if isinstance(subtree,nltk.Tree):
+                if(subtree.label()=="NE"):
+                    entities.append(subtree.leaves()[0][0])
+            elif subtree[0].lower() in gaz_list:
+                entities.append(subtree[0])
+    return entities
 
-def MeasuredEntityDetection(posTag, gazetteer):
-    # unit_patterns = [r"(\d+(\.\d+)?)\s*"]
-    ouput=[]
-    cd_words=list(filter(lambda x: x[1]=="CD",posTag))
+
+def gazetteer_modulation(gazetteer):
+    list=[]
+    for key in gazetteer:
+        list.extend(gazetteer[key])
+
+    return list
+
+ne=nltk.ne_chunk(tagged_input,binary=True)
+print(ne)
+consolidated_gazetteer_list=gazetteer_modulation(gazetteer)
+named_ent=custom_NERI(ne,consolidated_gazetteer_list)
+print(named_ent)
+
+
+
+#Measured Entity Recogniton
+
+# def MeasuredEntityModule(tagged_input,gazetteer):
+#     output=[]
+#     CD_words=list(filter(lambda x: x[1]=="CD" ,tagged_input))
+#     nextIndex=dict()
+#     for i in CD_words:
+#         index=0
+#         if(i in nextIndex.keys()):
+#             index=tagged_input.index(i,nextIndex[i]+1)
+#             nextIndex[i]=index
+#         else:
+#             index=tagged_input.index(i)
+#             nextIndex[i]=index
+#         result=""
+#         if tagged_input[index-1][1]=="currency":
+#             result+=tagged_input[index-1][0]+" "
+#         result+=tagged_input[index][0]
+#         endIndex=index+4 if len(tagged_input)>index+4 else len(tagged_input)
+#         for j in range(index,endIndex):
+#             if(tagged_input[j][1] in ["currency","units","NNS","NN","product","time"]):
+#                 result+=" "+tagged_input[j][0]
+#         output.append(result)
+#     return outputà
+
+def MeasuredEntityModule(tagged_input,gazetteer,named_ent):
+    output=[]
+    CD_words=list(filter(lambda x: x[1]=="CD" and x[0] not in named_ent ,tagged_input))
     nextIndex=dict()
-    for i in cd_words:
-          index=0
-          if( i in nextIndex.keys()):
-                index=posTag.index(i,nextIndex[i]+1)
-                nextIndex[i]=index
-          else:
-                index=posTag.index(i)
-                nextIndex[i]=index
-          result=""
-          if(posTag[index-1] =="currency"):
-                result+=posTag[index-1][0]
-          result+=posTag[index][0]+" "
-          indexBound=index+4 if len(posTag)>index+4 else len(posTag)
-          for j in range(index,indexBound):
-                if(posTag[j][1] in ["Unit","Currency","NNS","NN"] ):
-                      result+=" "+posTag[j][0]
-          ouput.append(result)
-    return ouput
-print(MeasuredEntityDetection(posTag,gazetteer))
-
+    for i in CD_words:
+        index=0
+        if(i in nextIndex.keys()):
+            index=tagged_input.index(i,nextIndex[i]+1)
+            nextIndex[i]=index
+        else:
+            index=tagged_input.index(i)
+            nextIndex[i]=index
+        result=""
+        if tagged_input[index-1][1]=="currency":
+            result+=tagged_input[index-1][0]+" "
+        result+=tagged_input[index][0]
+        endIndex=index+4 if len(tagged_input)>index+4 else len(tagged_input)
+        for j in range(index,endIndex):
+            if(tagged_input[j][1] in ["currency","units","NNS","NN","product","time"]):
+                result+=" "+tagged_input[j][0]
+        output.append(result)
+    return output
+meList=MeasuredEntityModule(tagged_input,gazetteer,named_ent)
+print(meList)
