@@ -11,76 +11,115 @@ from collections import defaultdict
 # nltk.download('averaged_perceptron_tagger')
 # nltk.download('maxent_ne_chunker')
 # nltk.download('words')
+import spacy
+
+# Tokenization Regular Expression
+mytokenizer=RegexpTokenizer(r'\S[A-Z|\.]+ \w*|\'s|[A-Z|a-z]+\'[a-r|t-z]+|\$|[0-9]+\,[0-9]+\,*[0-9|\,]*|[0-9]+\.[0-9]+|\w+|\d+|\S+')
+
+sentence = reuters.raw("training/267")
+
+# Handling the heading in the corpus which are all uppercase words
+headingSplit = re.search(r'[A-Z|\s]+\n',sentence)
+# Using Regular Expression to just find the the uppercase words to distinguish between heading and body of the text
+heading=headingSplit.group().lower()
+# Combining the heading and body
 
 
-# Tokenixation
-# mytokenizer=RegexpTokenizer(r'[A-Z]+\.[A-Z]+\.|\'s|[0-9]+\,[0-9]+|[0-9]+\.[0-9]+|\w+|\d+|\S') ======= like Embassy's
-
-mytokenizer=RegexpTokenizer(r'[A-Z]+\.[A-Z]+\. \w*|\'s|\$|[0-9]+\,[0-9]+|[0-9]+\.[0-9]+|\w+|\d+|\S+')
-sentence = reuters.raw("training/9940")
-# sentence="UNITED STATES TO IMPORT BRAZILIAN COFFEE\n The United States is set to import coffee from Brazil in 2022, despite challenges in the coffee market. According to a report by the Brazilian Coffee Association, the U.S. is expected to import over 500,000 bags of Brazilian coffee next year. This move comes as the price of coffee beans worldwide continues to rise, making it a strategic decision for the United States to secure a steady supply of coffee beans.Brazil's coffee production is forecasted to reach 3.5 million tonnes in 2022, marking a significant increase from the previous year. This surge in production is seen as a response to growing global demand for high-quality coffee. It is expected that the Brazilian government will implement measures to support coffee farmers and maintain the country's position as a major coffee exporter."
-
-headindSplit = re.search(r'[A-Z|\s]+\n',sentence)
-heading=headindSplit.group().lower()
-
-body=heading+sentence[heading.find("\n")+1:]+".I have one dog. Three handsome pooches. A group of three delightful dogs. Three appealing furry friends."
+body=heading+sentence[heading.find("\n")+1:]
 sentence=body
+
+# Using NLTK tokenizer with my custom regex tokenizer
 tokenization= mytokenizer.tokenize(sentence)
-print(tokenization)
+print("\nSentence =\n",sentence)
+print("--------------------------------------------")
+print("Tokenization = \n",tokenization)
+print("--------------------------------------------")
+# Tokenization Examples
+examples="Greetings! How have you been on this fine Tuesday? The price of the latest iPhone is $1,200. In scientific notation, 3.5 x 10^7 represents a large number. The meeting is scheduled for 3 PM at 567 Tech Boulevard, Suite 12C, San Francisco, CA. Don't forget to check your email (user@example.com) for important updates."
+# print(examples,"\n")
+# print(mytokenizer.tokenize(examples))
+
 
 
 # SENTENCE SPLITTING
-sentenceSplit = nltk.sent_tokenize(sentence)
-# print(sentenceSplit)
+def spaCySentenceSplitting(sentence):
+    sentence = sentence.replace('\n','')
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(sentence)
+    sentences = [sent.text.strip() for sent in doc.sents]
+    print("Sentence Splitting =\n",sentences)
+    print("--------------------------------------------")
+
+spaCySentenceSplitting(sentence)
+# Example Test case
+# value="The quick brown fox jumped over the lazy dog. It happened in the quiet afternoon. Coding is an art. It requires creativity and precision to craft elegant solutions. Have you ever tried skydiving? It's an exhilarating experience that you won't forget. The recipe calls for flour, sugar, and eggs. Mix them well before baking.In the heart of the city, a bustling market comes to life. Vendors shout, and customers haggle for the best deals."
+# spaCySentenceSplitting(value)
+
 
 # POS Tagging
 posTag = nltk.pos_tag(tokenization)
-print(posTag,"\n","------------------------------------------------------------------------")
+print("POS Tagging = \n",posTag)
+print("--------------------------------------------")
+
+value1="The copra market of 2020 saw a surge in demand for SpecialtyCopra, a premium variety. Copra-producing nations like Vietnam and Thailand collaborated to address industry challenges. However, climate-induced disruptions in 2022 impacted copra production and market dynamics."
 
 
-# gazetter
 gazetteer = {
-    "Country": ["Indonesia", "Philippines", "indonesia","phillipines"],
-    "Year": ["1987", "1986"],
-    "Currency" :["rupiah"],
-    "Organization": ["U.S. Embassy"],
-    "Unit": ["tonnes", "mln tonnes", "mln","pct"],
-    "Product": ["copra"],
-    "Concept": ["margin", "prices"],
-    "Action": ["forecast", "import", "devaluation", "duties", "price", "production"]
+    "Country": ["india", "indonesia", "philippines", "malaysia", "vietnam", "thailand", "singapore", "japan", "canada", "australia", "brazil", "united states", "united kingdom", "germany", "france", "italy", "spain", "russia", "china", "south korea", "mexico", "argentina", "south africa", "nigeria", "egypt", "saudi arabia", "turkey", "iran", "australia", "new zealand", "chile", "peru", "colombia", "ecuador", "venezuela", "pakistan", "bangladesh", "sri lanka", "nepal", "afghanistan", "iraq", "syria", "lebanon", "jordan", "israel", "palestine"],
+    "Year": ["1987", "1986", "1990", "1995", "2000", "2020", "2022", "2005", "2010", "2015", "2030"],
+    "Currency": ["rupiah", "peso", "ringgit", "dong", "baht", "dollar", "euro", "pound", "yen", "rupee", "yuan","$","dls"],
+    "Organization": ["U.S. Embassy", "world health organization", "united nations", "red cross", "greenpeace", "UNICEF", "amnesty international", "NASA", "european union", "OPEC"],
+    "Unit": ["tonnes", "mln", "mln tonnes", "meters", "liters", "kilograms", "pct", "gallons", "cubic meters", "square kilometers", "grams","kg"],
+    "Product": ["copra", "rice", "rubber", "coffee", "sugar", "corn", "wheat", "cotton", "oil", "natural gas", "coal"],
+    "Concept": ["margin", "prices", "demand", "supply", "trade", "economy", "market", "sustainability", "innovation", "automation", "blockchain"],
+    "Action": ["forecast", "import", "export", "devaluation", "duties", "price", "production", "trade", "investment", "regulation", "merger"],
+    "Time": ["am", "pm", "AM", "PM", "3:30", "12:45", "8:00", "10:15", "6:30", "1:00", "9:45"]
 }
 
+
+
+
 # Named Entity Recoginiton
+ne = nltk.ne_chunk(posTag,binary=True)
 
-# print(nltk.ne_chunk(posTag,binary=False))
+# Using ne_chunk to identify Named Entity(NE) but certain NE are not identified by the deafult package in NLTK
+# Will use custom method to check with a gazetter list and identify the ones missed by the ne_chunk package
+
+def customNER(ne,gazetteer):
+      entities =[]
+      if isinstance(ne,nltk.Tree):
+            # using nltk tree to find the subtree are get the NE from the posTag value
+            for subtree in ne:
+                  if isinstance(subtree,nltk.Tree):
+                        # if term has the NE tag it is appended to the list
+                        if(subtree.label()=="NE"):
+                              entities.append(subtree.leaves()[0][0])
+                  # else checking if its in the gazetteer list and storing it in the list
+                  elif subtree[0].lower() in gazetteer:
+                        entities.append(subtree[0])
+      return entities
+
+# With this method creating a flat list to store the gazetteer value which will be used in customNER
+def listmodification(gazetteer):
+      lst=[]
+      for key in gazetteer:
+            lst.extend(gazetteer[key])
+      return lst
+
+finalGaz= listmodification(gazetteer)
+NER = customNER(ne, finalGaz)
+print("Named Entity Recognition = \n",NER)
+print("--------------------------------------------")                  
 
 
-def custom_ner(posTag, gazetteer):
-    entities = []
-    for token, pos_tag in posTag:
-        for category, values in gazetteer.items():
-            if token.upper() in [value.upper() for value in values]:
-                entities.append((token, category))
 
-    # limitations of this module is that only matched value is stored like posTagged value in Gaz list
-    for word,categories in posTag:
-                for key, values in gazetteer.items():
-                      if word in values:
-                            index= posTag.index((word,categories))
-                            posTag[index]=(word,key)
-    return entities,posTag
-
-# Perform custom NER
-recognized_entities= custom_ner(posTag, gazetteer)
-print("\n",recognized_entities,"----------")
-
-print("\n",nltk.ne_chunk(posTag,binary=True))
-
-def MeasuredEntityDetection(posTag, gazetteer):
-    # unit_patterns = [r"(\d+(\.\d+)?)\s*"]
+# Measured Entity Detection
+def MeasuredEntityDetection(posTag, gazetteer, ne):
     ouput=[]
-    cd_words=list(filter(lambda x: x[1]=="CD",posTag))
+      #To focus on expected measured entities, the module first filters away cardinal number terms that are not labeled as named things.
+    cd_words=list(filter(lambda x: x[1]=="CD" and x[0] not in ne,posTag))
     nextIndex=dict()
+#   Indexing
     for i in cd_words:
           index=0
           if( i in nextIndex.keys()):
@@ -90,14 +129,18 @@ def MeasuredEntityDetection(posTag, gazetteer):
                 index=posTag.index(i)
                 nextIndex[i]=index
           result=""
-          if(posTag[index-1] =="currency"):
+          if posTag[index][1] == "CD" and all(gaz_word.lower() not in i[0].lower() for gaz_word in gazetteer.get("Year", [])):
+            if(posTag[index-1] =="Currency"):
                 result+=posTag[index-1][0]
-          result+=posTag[index][0]+" "
+          result+=posTag[index][0]+""
           indexBound=index+4 if len(posTag)>index+4 else len(posTag)
           for j in range(index,indexBound):
-                if(posTag[j][1] in ["Unit","Currency","NNS","NN"] ):
-                      result+=" "+posTag[j][0]
+                if(posTag[j][1] in ["Unit","Currency","NNS","NN","Product","Time"]) : # add VBP for ( 2 am)
+                        result += " " + posTag[j][0]
+                  #     result+=" "+posTag[j][0]
           ouput.append(result)
     return ouput
-print(MeasuredEntityDetection(posTag,gazetteer))
+
+MED = MeasuredEntityDetection(posTag, gazetteer, ne)
+print("Measured Entity Detection = \n",MED)
 

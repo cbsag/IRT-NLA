@@ -5,7 +5,10 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+from nltk.tokenize import RegexpTokenizer
 
+
+# this clean_text function is used because I encontered (special character)
 def clean_text(text):
     cleaned_text = re.sub(r'[\x00-\x1F\x7F-\x9F]', ' ', text)
     cleaned_text = ' '.join(cleaned_text.split())
@@ -42,28 +45,28 @@ def tokenizzzToLowerCase(text):
     return lowercased_text
 
 def tokenizzz(text):
-    tokens = word_tokenize(text)
+    mytokenizer=RegexpTokenizer(r'\S[A-Z|\.]+ \w*|\'s|[A-Z|a-z]+\'[a-r|t-z]+|\$|[0-9]+\,[0-9]+\,*[0-9|\,]*|[0-9]+\.[0-9]+|\w+|\d+|\S+')
+
+    tokens = mytokenizer.tokenize(text)
     return tokens
 
 def process_article(article_text, article_output_folder):
+    # Custom Stopwords list - as per the project requirement
     custom_stopwords = [
         'a', 'an', 'and', 'are', 'as', 'at', 'for', 'from', 'has', 'he', 'in', 'is',
         'it', 'its', 'of', 'on', 'that', 'the', 'to', 'was', 'were', 'with'
     ]
+    # Extending to the NLTK's stopwords
     custom_stopwords.extend(stopwords.words('english'))
-    # pivot_text=article_text
-
+    
     # Tokenization
     pivot2_text = tokenizzz(article_text)
-    # print(pivot1_text)
     tokens_output_file = os.path.join(article_output_folder, 'Tokenizer-output.txt')
     with open(tokens_output_file, 'w', encoding='utf-8') as output_file:
         output_file.write(" ".join(pivot2_text))
 
     # Lowercasing
-    
     pivot2_text = tokenizzzToLowerCase(pivot2_text)
-    # print(pivot2_text)
     lowercased_output_file = os.path.join(article_output_folder, 'Lowercased-output.txt')
     with open(lowercased_output_file, 'w', encoding='utf-8') as output_file:
         output_file.write(pivot2_text)
@@ -85,28 +88,36 @@ def process_article(article_text, article_output_folder):
     with open(stopwords_used_file, 'w', encoding='utf-8') as output_file:
         output_file.write("\n".join(custom_stopwords))
 
+# This function is used to read the corpus file from the local storage and traverse 
+# to the sgm files and select first five Reuter’s news items in the corpus 
 def process_reuters_corpus(corpus_root, output_root, num_articles=5):
     article_count = 0  # Counter for processed articles
     for root, _, files in os.walk(corpus_root):
         for filename in files:
             if article_count >= num_articles:
                 break
+            # traversing to the .sgm file path
             if filename.endswith(".sgm"):
                 with open(os.path.join(root, filename), 'r', encoding='ISO-8859-1') as file:
+                    # using beautifulSoup to parse the retures file
                     soup = BeautifulSoup(file, 'html.parser')
                     for i, newsitem in enumerate(soup.find_all('reuters')):
+                        # this counter is used to select the first five files
                         if article_count >= num_articles:
                             break
+                        # accesing the text part of the file
                         body = newsitem.find('text')
                         if body:
                             artText = body.get_text()
                             cleaned_article_text = clean_text(artText)
                             article_output_folder = os.path.join(output_root, f'Article_{i + 1}')
+                            # making the folders for the five news article and calling the functions to
                             os.makedirs(article_output_folder, exist_ok=True)
                             process_article(cleaned_article_text, article_output_folder)
                             article_count += 1
 
 # Usage to process only the first five articles
+# To run the code change the below directories alone
 corpus_root = 'C:/Users/cbsag/Desktop/NLA/IRT'
 output_root = 'C:/Users/cbsag/Desktop/NLA/Output'
 num_articles_to_process = 5
